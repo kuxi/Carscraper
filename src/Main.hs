@@ -27,9 +27,12 @@ mtrace msg = return () --trace msg $ return ()
 
 hasId id = "id" @= id
 
-url page = "http://bilasolur.is/SearchResults.aspx?page="
+url' id page = "http://bilasolur.is/SearchResults.aspx?page="
             ++ show page
-            ++ "&id=790a6699-bb63-449e-88b0-4b231aa2eee9"
+            ++ "&id="
+            ++ show id
+
+url = url' "790a6699-bb63-449e-88b0-4b231aa2eee9"
 
 
 scrapeInt :: Int -> String -> Scraper Text Int
