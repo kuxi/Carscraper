@@ -32,6 +32,13 @@ url page = "http://bilasolur.is/SearchResults.aspx?page="
             ++ "&id=790a6699-bb63-449e-88b0-4b231aa2eee9"
 
 
+scrapeInt :: Int -> String -> Scraper Text Int
+scrapeInt prefixLength idSelect = do
+    value <- clearDots . drop prefixLength <$> text ("div" @: [hasId idSelect])
+    (intValue, rest) <- either (const AP.empty) return $ decimal value
+    return intValue
+    where clearDots = T.filter (/= '.')
+
 getMakeAndModel :: Scraper Text (Text, Text)
 getMakeAndModel = do
     make <- text $ "span" @: [hasClass "carmake"]
@@ -41,30 +48,23 @@ getMakeAndModel = do
     return (make, model)
 
 getSerial :: Scraper Text Int
-getSerial = do
-        -- 11 == length "raðnúmer"
-    serial' <- drop 11 <$> text ("div" @: [hasId "car_list_itembottom_right"])
-    either (const AP.empty) (\(s, _) -> return s) $ decimal serial'
+getSerial = scrapeInt 11 "car_list_itembottom_right"
+-- 11 == length "raðnúmer"
 
 getYear :: Scraper Text Int
-getYear = do
-    year' <- drop 9 <$> text ("div" @: [hasId "car_list_item4"])
-    (year, rest) <- either (const AP.empty) return $ decimal year'
-    -- TODO: ignoring nýskráning here from 'rest'
-    return year
+getYear = scrapeInt 9 "car_list_item4"
+-- 9 == length "Árgerð"
+-- TODO: ignoring nýskráning here from 'rest'
 
 getPrice :: Scraper Text Int
-getPrice = do
-    price' <- clearDots . drop 6 <$> text ("div" @: [hasId "car_list_item3"])
-    price <- either (const AP.empty) (\(s, _) -> return s) $ decimal price'
-    return $ price * 1000 --price is listed in thousands of kr
-    where clearDots = T.filter (/= '.')
+getPrice = (*1000) <$> scrapeInt 6 "car_list_item3"
+-- 6 == length "Verð"
+-- price is listed in thousands of kr
 
 getMilage :: Scraper Text Int
-getMilage = do
-    milage' <- drop 7 <$> text ("div" @: [hasId "car_list_item5"])
-    milage <- either (const AP.empty) (\(s, _) -> return s) $ decimal milage'
-    return $ milage  * 1000 -- milage is listed in thousands of km
+getMilage = (*1000) <$> scrapeInt 7 "car_list_item5"
+-- 7 == length "Akstur"
+-- milage is listed in thousands of km
 
 car :: Scraper Text Car
 car = do
